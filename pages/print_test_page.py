@@ -28,6 +28,7 @@ class PrintTestPage(BasePage):
         self._total_layers = 10
         self._layer_height = 0.05
         self._bottom_layers = 3
+        self._blade_mode = 1  # 1=Normal, 2=2-Zone
         self._setup_content()
 
     def _setup_content(self):
@@ -160,6 +161,55 @@ class PrintTestPage(BasePage):
         row_bottom.addWidget(self.lbl_bottom_layers)
         right_layout.addLayout(row_bottom)
 
+        # 블레이드 모드 선택
+        row_mode = QHBoxLayout()
+        lbl_mode = QLabel("Blade Mode:")
+        lbl_mode.setFont(Fonts.h3())
+        lbl_mode.setStyleSheet(f"color: {Colors.TEXT_PRIMARY}; background: transparent;")
+        row_mode.addWidget(lbl_mode)
+
+        mode_btn_style_selected = f"""
+            QPushButton {{
+                background-color: {Colors.NAVY};
+                color: {Colors.WHITE};
+                border: none;
+                border-radius: {Radius.MD}px;
+                font-weight: bold;
+            }}
+        """
+        mode_btn_style_normal = f"""
+            QPushButton {{
+                background-color: {Colors.BG_TERTIARY};
+                color: {Colors.TEXT_SECONDARY};
+                border: 1px solid {Colors.BORDER};
+                border-radius: {Radius.MD}px;
+            }}
+            QPushButton:pressed {{
+                background-color: {Colors.NAVY};
+                color: {Colors.WHITE};
+            }}
+        """
+
+        self._mode_btn_selected = mode_btn_style_selected
+        self._mode_btn_normal = mode_btn_style_normal
+
+        self.btn_mode1 = QPushButton("1: Normal")
+        self.btn_mode1.setFixedSize(100, 36)
+        self.btn_mode1.setFont(Fonts.body())
+        self.btn_mode1.setCursor(Qt.PointingHandCursor)
+        self.btn_mode1.clicked.connect(lambda: self._set_blade_mode(1))
+        row_mode.addWidget(self.btn_mode1)
+
+        self.btn_mode2 = QPushButton("2: 2-Zone")
+        self.btn_mode2.setFixedSize(100, 36)
+        self.btn_mode2.setFont(Fonts.body())
+        self.btn_mode2.setCursor(Qt.PointingHandCursor)
+        self.btn_mode2.clicked.connect(lambda: self._set_blade_mode(2))
+        row_mode.addWidget(self.btn_mode2)
+
+        self._update_mode_buttons()
+        right_layout.addLayout(row_mode)
+
         right_layout.addStretch()
 
         # Start 버튼
@@ -239,6 +289,20 @@ class PrintTestPage(BasePage):
                 self._bottom_layers = int(keypad.get_value())
                 self.lbl_bottom_layers.setText(str(self._bottom_layers))
 
+    def _set_blade_mode(self, mode: int):
+        """블레이드 모드 변경"""
+        self._blade_mode = mode
+        self._update_mode_buttons()
+
+    def _update_mode_buttons(self):
+        """블레이드 모드 버튼 스타일 갱신"""
+        if self._blade_mode == 1:
+            self.btn_mode1.setStyleSheet(self._mode_btn_selected)
+            self.btn_mode2.setStyleSheet(self._mode_btn_normal)
+        else:
+            self.btn_mode1.setStyleSheet(self._mode_btn_normal)
+            self.btn_mode2.setStyleSheet(self._mode_btn_selected)
+
     def _on_start(self):
         """Start 버튼 클릭"""
         preset = self.settings.get_selected_material_preset()
@@ -253,6 +317,7 @@ class PrintTestPage(BasePage):
             'yDispenseDistance': preset.y_dispense_distance if preset else 1.0,
             'yDispenseSpeed': preset.y_dispense_speed * 60 if preset else 180,
             'yDispenseDelay': preset.y_dispense_delay if preset else 2.0,
+            'bladeMode': self._blade_mode,
         }
 
         self.start_test.emit(params)

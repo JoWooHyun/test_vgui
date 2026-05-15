@@ -374,6 +374,7 @@ class MainWindow(QMainWindow):
             y_dispense_speed=params.get('yDispenseSpeed', 180),
             y_dispense_delay=params.get('yDispenseDelay', 2.0),
             y_priming_position=priming_pos,
+            blade_mode=params.get('bladeMode', 1),
         )
 
     def _on_progress(self, current: int, total: int):

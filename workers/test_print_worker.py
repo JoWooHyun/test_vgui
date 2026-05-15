@@ -24,6 +24,10 @@ except ImportError:
 # LED 대체 대기 시간 (초)
 LED_SUBSTITUTE_DELAY = 5.0
 
+# 2구간 블레이드 고속 구간 설정
+BLADE_ZONE_BOUNDARY = 80    # 저속→고속 전환 위치 (mm)
+BLADE_FAST_SPEED = 1200     # 고속 구간 속도 (mm/min = 20mm/s)
+
 
 class PrintStatus(Enum):
     IDLE = auto()
@@ -48,6 +52,7 @@ class PrintJob:
     y_dispense_speed: int = 300
     y_dispense_delay: float = 2.0
     y_priming_position: float = 0.0
+    blade_mode: int = 1             # 1=Normal, 2=2-Zone
 
 
 class TestPrintWorker(QThread):
@@ -102,7 +107,8 @@ class TestPrintWorker(QThread):
                     y_dispense_distance: float = 1.0,
                     y_dispense_speed: int = 300,
                     y_dispense_delay: float = 2.0,
-                    y_priming_position: float = 0.0):
+                    y_priming_position: float = 0.0,
+                    blade_mode: int = 1):
         if self.isRunning():
             print("[TestPrintWorker] 이미 실행 중")
             return
@@ -118,6 +124,7 @@ class TestPrintWorker(QThread):
             y_dispense_speed=y_dispense_speed,
             y_dispense_delay=y_dispense_delay,
             y_priming_position=y_priming_position,
+            blade_mode=blade_mode,
         )
 
         self._is_paused = False
@@ -190,6 +197,7 @@ class TestPrintWorker(QThread):
         print(f"[TestPrintWorker] 테스트 프린트 시작")
         print(f"  - 총 레이어: {job.total_layers}")
         print(f"  - 블레이드 속도: {job.blade_speed} mm/min")
+        print(f"  - 블레이드 모드: {'Normal' if job.blade_mode == 1 else '2-Zone'}")
 
         if not self.simulation:
             if self.motor:
@@ -322,11 +330,23 @@ class TestPrintWorker(QThread):
                         return False
                     time.sleep(0.1)
 
-        # 3. X축 평탄화 (10→140)
-        if not self._motor_x_move(140, job.blade_speed):
-            self.error_occurred.emit(f"레이어 {layer_idx}: X축 평탄화 실패")
-            self._is_stopped = True
-            return False
+        # 3. X축 평탄화
+        if job.blade_mode == 2:
+            # 2-Zone: 10→80 저속, 80→140 고속
+            if not self._motor_x_move(BLADE_ZONE_BOUNDARY, job.blade_speed):
+                self.error_occurred.emit(f"레이어 {layer_idx}: X축 평탄화(저속) 실패")
+                self._is_stopped = True
+                return False
+            if not self._motor_x_move(140, BLADE_FAST_SPEED):
+                self.error_occurred.emit(f"레이어 {layer_idx}: X축 평탄화(고속) 실패")
+                self._is_stopped = True
+                return False
+        else:
+            # Normal: 10→140 일정 속도
+            if not self._motor_x_move(140, job.blade_speed):
+                self.error_occurred.emit(f"레이어 {layer_idx}: X축 평탄화 실패")
+                self._is_stopped = True
+                return False
 
         # 정지/일시정지 체크
         if self._check_stopped():
