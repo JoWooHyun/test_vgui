@@ -227,7 +227,7 @@ class TestPrintWorker(QThread):
         # 2. 첫 레진 토출 (고정값: 1mm, 3mm/s, 60초 대기)
         INITIAL_DISPENSE_DIST = -1.0
         INITIAL_DISPENSE_SPEED = 180  # mm/min (3mm/s)
-        INITIAL_DISPENSE_DELAY = 60.0
+        INITIAL_DISPENSE_DELAY = 30.0
         if not self._y_dispensing_disabled and self._y_position > 0:
             if self._check_stopped():
                 return
