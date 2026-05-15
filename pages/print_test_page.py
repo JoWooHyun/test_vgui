@@ -208,9 +208,9 @@ class PrintTestPage(BasePage):
         if which == "layers":
             keypad = NumericKeypad(
                 title="Total Layers",
-                current_value=self._total_layers,
+                value=self._total_layers,
                 min_val=1, max_val=1000,
-                is_integer=True,
+                allow_decimal=False,
                 parent=self
             )
             if keypad.exec():
@@ -219,9 +219,9 @@ class PrintTestPage(BasePage):
         elif which == "height":
             keypad = NumericKeypad(
                 title="Layer Height (mm)",
-                current_value=self._layer_height,
+                value=self._layer_height,
                 min_val=0.01, max_val=1.0,
-                is_integer=False,
+                allow_decimal=True,
                 parent=self
             )
             if keypad.exec():
@@ -230,9 +230,9 @@ class PrintTestPage(BasePage):
         elif which == "bottom":
             keypad = NumericKeypad(
                 title="Bottom Layers",
-                current_value=self._bottom_layers,
+                value=self._bottom_layers,
                 min_val=0, max_val=20,
-                is_integer=True,
+                allow_decimal=False,
                 parent=self
             )
             if keypad.exec():
